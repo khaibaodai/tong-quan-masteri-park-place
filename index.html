@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phân Tích Phân Khu Cao Tầng The Global City</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Harmony -->
+    <!-- Application Structure Plan: The application is designed as a single-page dashboard with a sticky top navigation for seamless movement between sections. The structure is thematic rather than linear: 1) A high-level overview of The Global City, 2) An interactive comparison tool for the three high-rise zones, and 3) Deep-dive sections for each zone, with Masteri Park Place (CT5) having its own internal tabbed navigation for granular details (Design, Amenities, Policy). This structure was chosen to empower users, allowing them to either get a quick comparative overview or conduct in-depth research on a specific zone without linear scrolling. The interactive chart and tab systems make complex information digestible and user-driven, enhancing usability far beyond a static report. -->
+    <!-- Visualization & Content Choices: 1. Project Stats -> Goal: Inform -> Method: Key stat cards with icons -> Interaction: Static -> Justification: Quickly convey core numbers. 2. Zone Comparison -> Goal: Compare -> Method: Interactive Bar Chart -> Interaction: Buttons filter data displayed on the chart -> Justification: Visually compare key metrics like unit counts effectively. Library: Chart.js. 3. Apartment Mix (CT5) -> Goal: Organize -> Method: Tabbed content for apartment types -> Interaction: Click tabs to view details -> Justification: Neatly organizes detailed specs without clutter. Method: HTML/JS. 4. Sales Policy (CT5) -> Goal: Inform/Compare -> Method: Donut Chart + Cards -> Interaction: Chart visualizes loan breakdown, cards detail payment plans -> Justification: Simplifies complex financial information. Library: Chart.js. This approach uses interactive elements to break down dense data into understandable segments, fully aligned with the designed application structure. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F8F7F4;
+            color: #3D3D3D;
+        }
+        .nav-link {
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #A07D5A;
+            border-bottom-color: #A07D5A;
+        }
+        .section-title {
+            color: #333;
+            font-weight: 700;
+        }
+        .card {
+            background-color: #FFFFFF;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+        }
+        .btn-primary {
+            background-color: #A07D5A;
+            color: white;
+            transition: background-color 0.3s ease;
+        }
+        .btn-primary:hover {
+            background-color: #8C6B4E;
+        }
+        .btn-secondary {
+            background-color: #EAEAEA;
+            color: #3D3D3D;
+            transition: background-color 0.3s ease;
+        }
+        .btn-secondary.active {
+            background-color: #A07D5A;
+            color: white;
+        }
+        .tab-button {
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+        .tab-button.active {
+            border-bottom-color: #A07D5A;
+            color: #A07D5A;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-white/80 backdrop-blur-lg shadow-sm sticky top-0 z-50">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex-shrink-0">
+                    <h1 class="text-xl font-bold text-[#A07D5A]">The Global City</h1>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="#overview" class="nav-link px-3 py-2 rounded-md text-sm font-medium">Tổng Quan</a>
+                        <a href="#comparison" class="nav-link px-3 py-2 rounded-md text-sm font-medium">So Sánh Phân Khu</a>
+                        <a href="#ct8" class="nav-link px-3 py-2 rounded-md text-sm font-medium">CT8 - Grand View</a>
+                        <a href="#ct7" class="nav-link px-3 py-2 rounded-md text-sm font-medium">CT7 - Lumiere Midtown</a>
+                        <a href="#ct5" class="nav-link px-3 py-2 rounded-md text-sm font-medium">CT5 - Masteri Park Place</a>
+                        <a href="#tools-advice" class="nav-link px-3 py-2 rounded-md text-sm font-medium">Công Cụ & Tư Vấn</a>
+                    </div>
+                </div>
+                 <div class="md:hidden">
+                    <select id="mobile-nav" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                        <option value="#overview">Tổng Quan</option>
+                        <option value="#comparison">So Sánh</option>
+                        <option value="#ct8">CT8</option>
+                        <option value="#ct7">CT7</option>
+                        <option value="#ct5">CT5</option>
+                        <option value="#tools-advice">Công Cụ & Tư Vấn</option>
+                    </select>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        
+        <section id="overview" class="mb-16 scroll-mt-20">
+            <h2 class="text-3xl md:text-4xl font-bold text-center mb-4 section-title">Phân Tích Phân Khu Cao Tầng The Global City</h2>
+            <p class="text-center text-lg text-gray-600 max-w-3xl mx-auto mb-12">Một cái nhìn tổng quan về "Downtown City" mới của TP. Hồ Chí Minh và vai trò của các phân khu cao tầng trong bức tranh toàn cảnh.</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+                <div class="card p-6 flex flex-col items-center text-center">
+                    <div class="text-4xl mb-2">🏙️</div>
+                    <h3 class="text-xl font-semibold mb-2">Chủ Đầu Tư Uy Tín</h3>
+                    <p class="text-gray-600">Phát triển bởi Masterise Homes - nhà phát triển BĐS hàng hiệu quốc tế, tiên phong áp dụng các chuẩn mực toàn cầu.</p>
+                </div>
+                <div class="card p-6 flex flex-col items-center text-center">
+                    <div class="text-4xl mb-2">📍</div>
+                    <h3 class="text-xl font-semibold mb-2">Vị Trí Chiến Lược</h3>
+                    <p class="text-gray-600">Tọa lạc tại phường An Phú, Quận 2 (nay là TP. Thủ Đức), là tâm điểm kết nối các tuyến giao thông huyết mạch.</p>
+                </div>
+                <div class="card p-6 flex flex-col items-center text-center">
+                    <div class="text-4xl mb-2">📐</div>
+                    <h3 class="text-xl font-semibold mb-2">Quy Mô Đồ Sộ</h3>
+                    <p class="text-gray-600">Tổng diện tích 117.4 ha, được quy hoạch bài bản để trở thành một trung tâm thành phố mới sôi động và hiện đại.</p>
+                </div>
+            </div>
+
+            <div class="card p-8">
+                <h3 class="text-2xl font-bold mb-6 text-center section-title">Hệ Sinh Thái Tiện Ích Đẳng Cấp</h3>
+                 <p class="text-center text-gray-600 max-w-3xl mx-auto mb-8">Khu đô thị được thiết kế để mang lại trải nghiệm sống, làm việc và giải trí toàn diện, với các khối cao tầng đóng vai trò là nơi an cư lý tưởng, kết nối trực tiếp với toàn bộ tiện ích chung.</p>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+                    <div>
+                        <div class="text-5xl mb-2">🛶</div>
+                        <p class="font-semibold">Kênh Đào The Canal</p>
+                        <span class="text-sm text-gray-500">Dài 2km, tái hiện không khí sôi động của Venice.</span>
+                    </div>
+                    <div>
+                        <div class="text-5xl mb-2">🛍️</div>
+                        <p class="font-semibold">Trung Tâm Thương Mại</p>
+                         <span class="text-sm text-gray-500">Diện tích 123,000 m², quy tụ các thương hiệu hàng đầu.</span>
+                    </div>
+                    <div>
+                        <div class="text-5xl mb-2">🌳</div>
+                        <p class="font-semibold">Công Viên Cảnh Quan</p>
+                         <span class="text-sm text-gray-500">Mảng xanh rộng lớn mang lại không gian trong lành.</span>
+                    </div>
+                    <div>
+                        <div class="text-5xl mb-2">🎶</div>
+                        <p class="font-semibold">Khu Nhạc Nước</p>
+                         <span class="text-sm text-gray-500">Lớn nhất Đông Nam Á, điểm nhấn giải trí đặc sắc.</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="comparison" class="mb-16 scroll-mt-20">
+            <h2 class="text-3xl md:text-4xl font-bold text-center mb-4 section-title">So Sánh Nhanh Các Phân Khu Cao Tầng</h2>
+            <p class="text-center text-lg text-gray-600 max-w-3xl mx-auto mb-12">Chọn một phân khu để xem thông tin tổng hợp và so sánh trực quan quy mô qua biểu đồ. Mỗi phân khu mang một định vị và phong cách riêng biệt.</p>
+            
+            <div class="text-center mb-8">
+                <button id="btn-comp-ct8" class="comparison-btn btn-secondary py-2 px-6 rounded-full text-lg font-semibold mx-2 my-1 active">CT8</button>
+                <button id="btn-comp-ct7" class="comparison-btn btn-secondary py-2 px-6 rounded-full text-lg font-semibold mx-2 my-1">CT7</button>
+                <button id="btn-comp-ct5" class="comparison-btn btn-secondary py-2 px-6 rounded-full text-lg font-semibold mx-2 my-1">CT5</button>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                <div id="comparison-details" class="card p-8">
+                </div>
+                <div class="card p-4">
+                    <div class="chart-container">
+                        <canvas id="comparisonChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="ct8" class="mb-16 scroll-mt-20">
+            <div class="card p-8">
+                <h2 class="text-3xl font-bold mb-2 section-title">CT8 - Masterise Grand View</h2>
+                <p class="text-lg text-gray-600 mb-6">Định vị sang trọng, tầm nhìn đắt giá.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                    <div><strong>Vị trí:</strong> Nằm ở vị trí trung tâm, dễ dàng kết nối với các tiện ích chính của khu đô thị.</div>
+                    <div><strong>Quy mô:</strong> Gồm nhiều tòa tháp cao tầng, cung cấp số lượng lớn căn hộ cao cấp.</div>
+                    <div><strong>Thiết kế:</strong> Kiến trúc hiện đại, sang trọng, tập trung vào không gian mở và tầm nhìn panorama.</div>
+                    <div><strong>Tiện ích nội khu:</strong> Hệ thống tiện ích đặc quyền như hồ bơi, gym, lounge...</div>
+                    <div><strong>Định vị:</strong> Phân khúc hạng sang, hướng đến khách hàng thượng lưu yêu cầu cao về chất lượng sống.</div>
+                    <div><strong>Tình trạng:</strong> Đang trong quá trình triển khai xây dựng.</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="ct7" class="mb-16 scroll-mt-20">
+            <div class="card p-8">
+                <h2 class="text-3xl font-bold mb-2 section-title">CT7 - Lumiere Midtown</h2>
+                <p class="text-lg text-gray-600 mb-6">Phong cách sống tinh tế, hài hòa với thiên nhiên.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                    <div><strong>Vị trí:</strong> Kề cận các khu vực cảnh quan xanh, mang lại không gian sống trong lành.</div>
+                    <div><strong>Quy mô:</strong> Bao gồm các tòa tháp được thiết kế hợp lý, tối ưu mật độ xây dựng.</div>
+                    <div><strong>Thiết kế:</strong> Phong cách kiến trúc xanh, giao thoa giữa hiện đại và thiên nhiên, tối đa hóa ánh sáng tự nhiên.</div>
+                    <div><strong>Tiện ích nội khu:</strong> Tập trung vào các tiện ích chăm sóc sức khỏe thể chất và tinh thần.</div>
+                    <div><strong>Định vị:</strong> Phân khúc cao cấp, dành cho khách hàng tìm kiếm sự cân bằng, tinh tế trong cuộc sống.</div>
+                    <div><strong>Tình trạng:</strong> Đang trong quá trình triển khai xây dựng.</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="ct5" class="scroll-mt-20">
+            <h2 class="text-3xl md:text-4xl font-bold text-center mb-4 section-title">CT5 - Masteri Park Place</h2>
+            <p class="text-center text-lg text-gray-600 max-w-3xl mx-auto mb-12">"Giao lộ của những nguồn năng lượng" - Nơi khởi sinh phong cách sống rạng rỡ, năng động dành cho thế hệ trẻ thành đạt.</p>
+            <div class="card p-4 sm:p-8">
+                <div class="border-b border-gray-200 mb-6">
+                    <nav class="-mb-px flex space-x-4 sm:space-x-8 justify-center" aria-label="Tabs">
+                        <button class="ct5-tab-button tab-button whitespace-nowrap py-4 px-1 text-sm sm:text-base font-medium active" data-target="ct5-overview">Tổng Quan & Vị Trí</button>
+                        <button class="ct5-tab-button tab-button whitespace-nowrap py-4 px-1 text-sm sm:text-base font-medium" data-target="ct5-design">Thiết Kế Căn Hộ</button>
+                        <button class="ct5-tab-button tab-button whitespace-nowrap py-4 px-1 text-sm sm:text-base font-medium" data-target="ct5-amenities">Tiện Ích</button>
+                        <button class="ct5-tab-button tab-button whitespace-nowrap py-4 px-1 text-sm sm:text-base font-medium" data-target="ct5-policy">Chính Sách & Đầu Tư</button>
+                    </nav>
+                </div>
+
+                <div id="ct5-overview" class="ct5-tab-content">
+                    <h3 class="text-2xl font-bold mb-4">Vị Trí Trái Tim, Kết Nối Vàng</h3>
+                    <p class="mb-6 text-gray-700">Tọa lạc tại trung tâm The Global City, Masteri Park Place là giao điểm kết nối hoàn hảo. Từ đây, cư dân có thể dễ dàng tiếp cận hệ thống tiện ích nội khu đẳng cấp như trung tâm thương mại, công viên, khu nhạc nước và kết nối nhanh chóng đến các tuyến giao thông huyết mạch như cao tốc TP.HCM - Long Thành - Dầu Giây, đường Đỗ Xuân Hợp.</p>
+                    <ul class="space-y-4">
+                        <li class="flex items-start"><span class="text-xl mr-3 text-[#A07D5A]">🏢</span> <div><strong>Quy mô:</strong> Gồm 4 tòa tháp căn hộ, cung cấp khoảng 2000 căn hộ.</div></li>
+                        <li class="flex items-start"><span class="text-xl mr-3 text-[#A07D5A]">🏗️</span> <div><strong>Cấu trúc:</strong> Chiều cao điển hình, mật độ xây dựng tối ưu, có tầng hầm và khối đế thương mại dịch vụ.</div></li>
+                        <li class="flex items-start"><span class="text-xl mr-3 text-[#A07D5A]"> pháp lý:</strong> Hình thức sở hữu lâu dài cho người Việt Nam, 50 năm cho người nước ngoài. Giấy phép xây dựng đầy đủ.</div></li>
+                        <li class="flex items-start"><span class="text-xl mr-3 text-[#A07D5A]">⏳</span> <div><strong>Tiến độ:</strong> Đang trong giai đoạn triển khai xây dựng, dự kiến bàn giao Quý 1/2028.</div></li>
+                    </ul>
+                </div>
+
+                <div id="ct5-design" class="ct5-tab-content hidden">
+                     <h3 class="text-2xl font-bold mb-4">Kiến Trúc Tinh Tế & Đa Dạng Loại Hình</h3>
+                     <p class="mb-6 text-gray-700">Thiết kế theo phong cách hiện đại, tối ưu hóa không gian và ánh sáng tự nhiên. Tiêu chuẩn bàn giao nội thất cao cấp từ các thương hiệu quốc tế, mang lại trải nghiệm sống tiện nghi và sang trọng.</p>
+                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                        <div>
+                            <div class="border p-4 rounded-lg h-full">
+                                <p class="font-bold">Studio</p>
+                                <p class="text-sm text-gray-600">~30-38 m²</p>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="border p-4 rounded-lg h-full">
+                                <p class="font-bold">1PN & 1PN+</p>
+                                <p class="text-sm text-gray-600">~45-55 m²</p>
+                            </div>
+                        </div>
+                         <div>
+                            <div class="border p-4 rounded-lg h-full">
+                                <p class="font-bold">2PN</p>
+                                <p class="text-sm text-gray-600">~65-80 m²</p>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="border p-4 rounded-lg h-full">
+                                <p class="font-bold">3PN</p>
+                                <p class="text-sm text-gray-600">~90-120 m²</p>
+                            </div>
+                        </div>
+                        <div class="col-span-2 md:col-span-4">
+                            <div class="border p-4 rounded-lg">
+                                <p class="font-bold">Duplex & Penthouse</p>
+                                <p class="text-sm text-gray-600">Phiên bản giới hạn với diện tích lớn và thiết kế độc đáo.</p>
+                            </div>
+                        </div>
+                     </div>
+                </div>
+
+                <div id="ct5-amenities" class="ct5-tab-content hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <h3 class="text-xl font-bold mb-4">Tiện Ích Độc Quyền</h3>
+                            <ul class="space-y-3">
+                                <li class="flex items-center"><span class="text-2xl mr-3">🏊</span> Hồ bơi vô cực & hồ Jacuzzi</li>
+                                <li class="flex items-center"><span class="text-2xl mr-3">🏋️</span> Phòng gym & yoga hiện đại</li>
+                                <li class="flex items-center"><span class="text-2xl mr-3">🧒</span> Khu vui chơi trẻ em trong nhà & ngoài trời</li>
+                                <li class="flex items-center"><span class="text-2xl mr-3">🛋️</span> Sảnh đón sang trọng chuẩn 5 sao</li>
+                                <li class="flex items-center"><span class="text-2xl mr-3">🌿</span> Vườn trên cao & khu BBQ ngoài trời</li>
+                            </ul>
+                        </div>
+                        <div>
+                             <h3 class="text-xl font-bold mb-4">Thừa Hưởng Tiện Ích Chung</h3>
+                             <p class="text-gray-700">Cư dân Masteri Park Place được hưởng trọn vẹn hệ sinh thái của The Global City chỉ trong vài bước chân, kiến tạo một cuộc sống tiện nghi "tất cả trong một".</p>
+                             <ul class="space-y-3 mt-4">
+                                <li class="flex items-center"><span class="text-2xl mr-3">🛍️</span> Trung tâm thương mại sầm uất</li>
+                                <li class="flex items-center"><span class="text-2xl mr-3">🛶</span> Dạo bộ, mua sắm dọc kênh đào</li>
+                                <li class="flex items-center"><span class="text-2xl mr-3">🎓</span> Trường học quốc tế</li>
+                                <li class="flex items-center"><span class="text-2xl mr-3">🏥</span> Bệnh viện, trung tâm chăm sóc sức khỏe</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="ct5-policy" class="ct5-tab-content hidden">
+                    <h3 class="text-2xl font-bold mb-2">Định Vị & Tiềm Năng Đầu Tư</h3>
+                    <p class="mb-6 text-gray-700">Với mức giá dự kiến từ <strong class="text-[#A07D5A]">150 triệu/m²</strong>, Masteri Park Place hướng đến đối tượng khách hàng là các gia đình trẻ, chuyên gia, và nhà đầu tư sành sỏi. Dự án sở hữu tiềm năng tăng giá vượt trội nhờ vị trí, uy tín chủ đầu tư và sự phát triển hạ tầng của TP. Thủ Đức.</p>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 items-center">
+                        <div class="lg:col-span-3">
+                             <h4 class="text-xl font-bold mb-4">Chính Sách Bán Hàng Ưu Việt (Dự kiến)</h4>
+                            <div class="space-y-4">
+                                <div class="border p-4 rounded-lg">
+                                    <h5 class="font-semibold text-[#A07D5A]">Thanh toán theo tiến độ</h5>
+                                    <p class="text-sm text-gray-600">Thanh toán 10% khi ký VBTT, sau đó 5% mỗi 2-3 tháng. Hỗ trợ 6.5%.</p>
+                                </div>
+                                <div class="border p-4 rounded-lg">
+                                    <h5 class="font-semibold text-[#A07D5A]">Thanh toán sớm</h5>
+                                    <p class="text-sm text-gray-600">Thanh toán sớm 70% trong 30 ngày để nhận chiết khấu hỗ trợ 12%.</p>
+                                </div>
+                                <div class="border p-4 rounded-lg">
+                                    <h5 class="font-semibold text-[#A07D5A]">Vay vốn ngân hàng (HTLS)</h5>
+                                    <p class="text-sm text-gray-600">Vay 70%, hỗ trợ lãi suất 0% đến 31/10/2028. Ân hạn nợ gốc đến 31/10/2029.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="lg:col-span-2">
+                             <div class="card p-4">
+                                <div class="chart-container" style="height: 300px; max-height: 300px;">
+                                    <canvas id="policyChart"></canvas>
+                                </div>
+                                <p class="text-center text-sm font-semibold mt-2">Cơ Cấu Gói Vay HTLS</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tools-advice" class="mb-16 scroll-mt-20">
+            <h2 class="text-3xl md:text-4xl font-bold text-center mb-4 section-title">Công Cụ & Tư Vấn Đầu Tư</h2>
+            <p class="text-center text-lg text-gray-600 max-w-3xl mx-auto mb-12">Sử dụng các công cụ và phân tích dưới đây để hoạch định tài chính và xây dựng chiến lược đầu tư hiệu quả cho Masteri Park Place.</p>
+            <div class="card p-4 sm:p-8">
+                <div class="border-b border-gray-200 mb-6">
+                    <nav class="-mb-px flex space-x-4 sm:space-x-8 justify-center" aria-label="Tabs">
+                        <button class="tools-tab-button tab-button whitespace-nowrap py-4 px-1 text-sm sm:text-base font-medium active" data-target="tools-calculator">Ước Tính Tài Chính</button>
+                        <button class="tools-tab-button tab-button whitespace-nowrap py-4 px-1 text-sm sm:text-base font-medium" data-target="tools-profile">Hồ Sơ & Tiềm Năng</button>
+                        <button class="tools-tab-button tab-button whitespace-nowrap py-4 px-1 text-sm sm:text-base font-medium" data-target="tools-recommendation">Khuyến Nghị</button>
+                    </nav>
+                </div>
+
+                <div id="tools-calculator" class="tools-tab-content">
+                    <h3 class="text-2xl font-bold mb-6 text-center">Công Cụ Ước Tính & Hoạch Định Tài Chính</h3>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                        <div class="space-y-6">
+                            <div>
+                                <label for="apartmentType" class="block text-sm font-medium text-gray-700">Loại căn hộ</label>
+                                <select id="apartmentType" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                    <option value="1PN" data-area="50">1 Phòng Ngủ (~50 m²)</option>
+                                    <option value="2PN" data-area="75" selected>2 Phòng Ngủ (~75 m²)</option>
+                                    <option value="3PN" data-area="100">3 Phòng Ngủ (~100 m²)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="unitPrice" class="block text-sm font-medium text-gray-700">Đơn giá dự kiến (triệu/m²)</label>
+                                <div class="flex items-center space-x-4">
+                                    <input type="range" id="unitPrice" min="130" max="170" value="150" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                                    <span id="unitPriceValue" class="font-bold text-[#A07D5A] w-24 text-center">150 triệu</span>
+                                </div>
+                            </div>
+                            <div class="bg-[#F8F7F4] p-4 rounded-lg space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <span class="font-semibold">Tổng giá trị:</span>
+                                    <span id="totalValue" class="font-bold text-lg text-right"></span>
+                                </div>
+                                 <div class="flex justify-between items-center">
+                                    <span class="font-semibold">Vốn tự có (30%):</span>
+                                    <span id="equityValue" class="font-bold text-lg text-right"></span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="font-semibold text-green-700">Vay ngân hàng (70%):</span>
+                                    <span id="loanValue" class="font-bold text-lg text-green-700 text-right"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex flex-col">
+                            <h4 class="text-lg font-bold mb-2 text-center">Biểu Đồ Dòng Tiền Thanh Toán (Minh Họa)</h4>
+                            <div class="card p-2">
+                                <div class="chart-container" style="height: 280px; max-height: 300px;">
+                                    <canvas id="paymentScheduleChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tools-profile" class="tools-tab-content hidden">
+                    <h3 class="text-2xl font-bold mb-6 text-center">Hồ Sơ Khách Hàng & Phân Tích SWOT</h3>
+                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                        <div>
+                             <h4 class="text-xl font-semibold mb-4 text-[#A07D5A]">Khách Hàng Mục Tiêu</h4>
+                            <ul class="space-y-4">
+                                <li class="flex"><span class="mr-3 mt-1">👨‍👩‍👧‍👦</span><div><strong>Gia đình trẻ & Chuyên gia:</strong> Tìm kiếm không gian sống hiện đại, tiện nghi, an toàn và cộng đồng văn minh.</div></li>
+                                <li class="flex"><span class="mr-3 mt-1">💼</span><div><strong>Nhà đầu tư:</strong> Mong muốn sản phẩm có tiềm năng tăng giá cao, dễ cho thuê và được phát triển bởi CĐT uy tín.</div></li>
+                                <li class="flex"><span class="mr-3 mt-1">🌍</span><div><strong>Người nước ngoài & Việt Kiều:</strong> Yêu cầu tiêu chuẩn sống quốc tế, vị trí kết nối thuận tiện và pháp lý minh bạch.</div></li>
+                            </ul>
+                            <h4 class="text-xl font-semibold mb-4 mt-6 text-[#A07D5A]">Tiềm Năng Tăng Giá</h4>
+                             <ul class="space-y-4">
+                                <li class="flex"><span class="mr-3 mt-1">🥇</span><div><strong>Vị trí "vàng":</strong> Tâm điểm của "thành phố mới" Thủ Đức với hạ tầng được đầu tư mạnh mẽ.</div></li>
+                                <li class="flex"><span class="mr-3 mt-1">📈</span><div><strong>Nguồn cung khan hiếm:</strong> Phân khúc căn hộ cao cấp tại khu vực trung tâm ngày càng ít.</div></li>
+                                <li class="flex"><span class="mr-3 mt-1">RENT</span><div><strong>Tiềm năng cho thuê:</strong> Hấp dẫn đối tượng chuyên gia làm việc tại các khu công nghệ cao.</div></li>
+                            </ul>
+                        </div>
+                        <div>
+                           <h4 class="text-lg font-bold mb-2 text-center">Phân Tích Tiềm Năng & Rủi Ro</h4>
+                           <div class="card p-2">
+                               <div class="chart-container" style="height: 350px; max-height: 400px;">
+                                   <canvas id="riskRadarChart"></canvas>
+                               </div>
+                           </div>
+                        </div>
+                     </div>
+                </div>
+
+                 <div id="tools-recommendation" class="tools-tab-content hidden">
+                    <h3 class="text-2xl font-bold mb-6 text-center">Khuyến Nghị Chuyên Sâu</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="border p-6 rounded-lg bg-gray-50">
+                            <h4 class="font-bold text-lg mb-2 text-center text-[#A07D5A]">Cho Nhà Đầu Tư</h4>
+                            <p class="text-sm text-gray-700">Tận dụng chính sách HTLS để tối ưu dòng tiền. Với 30% vốn ban đầu, nhà đầu tư có gần 4 năm không phải trả gốc và lãi, trong khi giá trị BĐS vẫn tăng. Đây là "đòn bẩy" tài chính lý tưởng để tối đa hóa lợi nhuận.</p>
+                        </div>
+                         <div class="border p-6 rounded-lg bg-gray-50">
+                            <h4 class="font-bold text-lg mb-2 text-center text-[#A07D5A]">Cho Gia Đình An Cư</h4>
+                            <p class="text-sm text-gray-700">Lịch thanh toán giãn và chính sách ân hạn nợ gốc giúp giảm áp lực tài chính, cho phép gia đình có thời gian chuẩn bị và tích lũy. Nhận nhà vào ở trước, trả nợ sau là một lợi thế lớn để ổn định cuộc sống.</p>
+                        </div>
+                         <div class="border p-6 rounded-lg bg-gray-50">
+                            <h4 class="font-bold text-lg mb-2 text-center text-[#A07D5A]">Cho Chuyên Gia Nước Ngoài</h4>
+                            <p class="text-sm text-gray-700">Dự án đáp ứng đầy đủ tiêu chuẩn sống quốc tế. Chính sách HTLS giúp việc sở hữu nhà tại Việt Nam trở nên dễ dàng hơn. Tiềm năng cho thuê lại khi không sử dụng cũng là một điểm cộng hấp dẫn.</p>
+                        </div>
+                    </div>
+                 </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-white mt-16 border-t">
+        <div class="container mx-auto py-6 px-4 sm:px-6 lg:px-8 text-center text-gray-500">
+            <p>&copy; <span id="year"></span> | Phân Tích & Tổng Hợp Bất Động Sản.</p>
+            <p class="text-xs mt-1">Thông tin trong báo cáo này chỉ mang tính chất tham khảo, không phải là thông báo hay cam kết pháp lý chính thức.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            
+            document.getElementById('year').textContent = new Date().getFullYear();
+
+            // Element & Chart Variable Declarations
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('main section');
+            const mobileNav = document.getElementById('mobile-nav');
+            const comparisonDetailsContainer = document.getElementById('comparison-details');
+            const comparisonBtns = document.querySelectorAll('.comparison-btn');
+            const ct5TabButtons = document.querySelectorAll('.ct5-tab-button');
+            const ct5TabContents = document.querySelectorAll('.ct5-tab-content');
+            const toolsTabButtons = document.querySelectorAll('.tools-tab-button');
+            const toolsTabContents = document.querySelectorAll('.tools-tab-content');
+            const apartmentTypeSelect = document.getElementById('apartmentType');
+            const unitPriceSlider = document.getElementById('unitPrice');
+            const unitPriceValue = document.getElementById('unitPriceValue');
+            const totalValueEl = document.getElementById('totalValue');
+            const equityValueEl = document.getElementById('equityValue');
+            const loanValueEl = document.getElementById('loanValue');
+            
+            let comparisonChart;
+            let paymentScheduleChart;
+            let riskRadarChart;
+
+            const activateNavLink = (id) => {
+                 navLinks.forEach(link => {
+                    link.classList.toggle('active', link.getAttribute('href') === id);
+                });
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const id = '#' + entry.target.id;
+                        activateNavLink(id);
+                        if(mobileNav.value !== id) {
+                           mobileNav.value = id;
+                        }
+                    }
+                });
+            }, { rootMargin: '-50% 0px -50% 0px', threshold: 0 });
+
+            sections.forEach(section => observer.observe(section));
+            
+            navLinks.forEach(link => {
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    document.querySelector(this.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                });
+            });
+
+            mobileNav.addEventListener('change', (e) => {
+                document.querySelector(e.target.value).scrollIntoView({ behavior: 'smooth' });
+            });
+
+            const comparisonData = {
+                ct8: {
+                    title: 'CT8 - Masterise Grand View',
+                    details: [
+                        { label: 'Định vị', value: 'Sang trọng, thượng lưu' },
+                        { label: 'Quy mô', value: '~5 tòa tháp' },
+                        { label: 'Tổng số căn hộ', value: '~3,000 căn' },
+                        { label: 'Tình trạng', value: 'Đang triển khai' }
+                    ]
+                },
+                ct7: {
+                    title: 'CT7 - Lumiere Midtown',
+                    details: [
+                        { label: 'Định vị', value: 'Cao cấp, tinh tế' },
+                        { label: 'Quy mô', value: '~4 tòa tháp' },
+                        { label: 'Tổng số căn hộ', value: '~2,500 căn' },
+                        { label: 'Tình trạng', value: 'Đang triển khai' }
+                    ]
+                },
+                ct5: {
+                    title: 'CT5 - Masteri Park Place',
+                    details: [
+                        { label: 'Định vị', value: 'Năng động, hiện đại' },
+                        { label: 'Quy mô', value: '4 tòa tháp' },
+                        { label: 'Tổng số căn hộ', value: '~2,000 căn' },
+                        { label: 'Tình trạng', value: 'Đang triển khai (dự kiến bàn giao Q1/2028)' }
+                    ]
+                }
+            };
+
+            function updateComparisonDetails(zone) {
+                const data = comparisonData[zone];
+                let html = `<h3 class="text-2xl font-bold mb-4 section-title">${data.title}</h3><div class="space-y-3">`;
+                data.details.forEach(item => {
+                    html += `<div class="flex justify-between items-center">
+                                <span class="font-semibold text-gray-600">${item.label}:</span>
+                                <span class="text-right">${item.value}</span>
+                             </div>`;
+                });
+                html += `</div>`;
+                comparisonDetailsContainer.innerHTML = html;
+                
+                comparisonBtns.forEach(btn => btn.classList.remove('active'));
+                document.getElementById(`btn-comp-${zone}`).classList.add('active');
+            }
+
+            comparisonBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const zone = btn.id.split('-')[2];
+                    updateComparisonDetails(zone);
+                    updateComparisonChart(zone);
+                });
+            });
+
+            const ctxComparison = document.getElementById('comparisonChart').getContext('2d');
+            
+            function createComparisonChart() {
+                comparisonChart = new Chart(ctxComparison, {
+                    type: 'bar',
+                    data: {
+                        labels: ['CT8 Grand View', 'CT7 Lumiere Midtown', 'CT5 Park Place'],
+                        datasets: [{
+                            label: 'Số Căn Hộ (ước tính)',
+                            data: [3000, 2500, 2000],
+                            backgroundColor: [
+                                'rgba(160, 125, 90, 0.4)',
+                                'rgba(160, 125, 90, 0.4)',
+                                'rgba(160, 125, 90, 0.4)',
+                            ],
+                            borderColor: [
+                                'rgba(160, 125, 90, 1)',
+                                'rgba(160, 125, 90, 1)',
+                                'rgba(160, 125, 90, 1)',
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        indexAxis: 'y',
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                             title: {
+                                display: true,
+                                text: 'So Sánh Quy Mô Căn Hộ (Ước Tính)',
+                                font: { size: 16 }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+
+            function updateComparisonChart(zone) {
+                const zoneMap = { ct8: 0, ct7: 1, ct5: 2 };
+                const index = zoneMap[zone];
+                
+                const backgroundColors = [
+                    'rgba(160, 125, 90, 0.4)',
+                    'rgba(160, 125, 90, 0.4)',
+                    'rgba(160, 125, 90, 0.4)',
+                ];
+                const borderColors = [
+                    'rgba(160, 125, 90, 1)',
+                    'rgba(160, 125, 90, 1)',
+                    'rgba(160, 125, 90, 1)',
+                ];
+
+                backgroundColors[index] = 'rgba(160, 125, 90, 0.8)';
+                borderColors[index] = 'rgba(140, 107, 78, 1)';
+                
+                comparisonChart.data.datasets[0].backgroundColor = backgroundColors;
+                comparisonChart.data.datasets[0].borderColor = borderColors;
+                comparisonChart.update();
+            }
+
+            ct5TabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    ct5TabButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+
+                    const targetId = button.getAttribute('data-target');
+                    ct5TabContents.forEach(content => {
+                        if (content.id === targetId) {
+                            content.classList.remove('hidden');
+                        } else {
+                            content.classList.add('hidden');
+                        }
+                    });
+                });
+            });
+
+            const ctxPolicy = document.getElementById('policyChart').getContext('2d');
+            new Chart(ctxPolicy, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Vốn tự có (20%)', 'Vốn tự có (10%)', 'Ngân hàng hỗ trợ (70%)'],
+                    datasets: [{
+                        data: [20, 10, 70],
+                        backgroundColor: [
+                            '#D3C5B7',
+                            '#B8A99A',
+                            '#A07D5A',
+                        ],
+                        hoverOffset: 4
+                    }]
+                },
+                 options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: {
+                                    size: 10
+                                }
+                            }
+                        },
+                        tooltip: {
+                             callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        label += context.parsed + '%';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            toolsTabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    toolsTabButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+
+                    const targetId = button.getAttribute('data-target');
+                    toolsTabContents.forEach(content => {
+                        content.classList.toggle('hidden', content.id !== targetId);
+                    });
+                });
+            });
+
+            function formatCurrency(value) {
+                if (value >= 1000) {
+                    return (value / 1000).toFixed(2) + ' tỷ VNĐ';
+                }
+                return value.toFixed(2) + ' triệu VNĐ';
+            }
+
+            function updateCalculator() {
+                const selectedOption = apartmentTypeSelect.options[apartmentTypeSelect.selectedIndex];
+                const area = parseFloat(selectedOption.getAttribute('data-area'));
+                const price = parseFloat(unitPriceSlider.value);
+                
+                unitPriceValue.textContent = `${price} triệu`;
+
+                const totalValue = (area * price); // in millions
+                const equity = totalValue * 0.3;
+                const loan = totalValue * 0.7;
+
+                totalValueEl.textContent = formatCurrency(totalValue);
+                equityValueEl.textContent = formatCurrency(equity);
+                loanValueEl.textContent = formatCurrency(loan);
+                
+                if(paymentScheduleChart) {
+                    const paymentMilestones = [
+                        { percent: 10 }, 
+                        { percent: 5 },  
+                        { percent: 5 },  
+                        { percent: 5 },  
+                        { percent: 5 },  
+                        { percent: 70 }  
+                    ];
+                    
+                    let cumulativePercent = 0;
+                    const paymentAmounts = paymentMilestones.map(p => (p.percent / 100) * totalValue);
+                    const cumulativeAmounts = paymentMilestones.map(p => {
+                        cumulativePercent += p.percent;
+                        return (cumulativePercent / 100) * totalValue;
+                    });
+
+                    paymentScheduleChart.data.datasets[0].data = paymentAmounts;
+                    paymentScheduleChart.data.datasets[1].data = cumulativeAmounts;
+                    paymentScheduleChart.update();
+                }
+            }
+            
+            function createPaymentScheduleChart() {
+                const ctx = document.getElementById('paymentScheduleChart').getContext('2d');
+                paymentScheduleChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Ký VBTT', 'Đợt 2', 'Đợt 3', 'Đợt 4', 'Ký HĐMB', 'Giải ngân'],
+                        datasets: [
+                            {
+                                label: 'Số tiền thanh toán (triệu VNĐ)',
+                                data: [],
+                                backgroundColor: 'rgba(160, 125, 90, 0.6)',
+                                borderColor: 'rgba(160, 125, 90, 1)',
+                                borderWidth: 1,
+                                yAxisID: 'y',
+                            },
+                            {
+                                label: 'Lũy kế',
+                                data: [],
+                                type: 'line',
+                                borderColor: '#8C6B4E',
+                                backgroundColor: 'transparent',
+                                tension: 0.2,
+                                yAxisID: 'y',
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: { display: true, text: 'Số tiền (triệu VNĐ)' }
+                            },
+                            x: { title: { display: true, text: 'Các đợt thanh toán' } }
+                        }
+                    }
+                });
+            }
+
+            function createRadarChart() {
+                const ctx = document.getElementById('riskRadarChart').getContext('2d');
+                riskRadarChart = new Chart(ctx, {
+                    type: 'radar',
+                    data: {
+                        labels: [
+                            'Vị trí', 
+                            'Tiện ích', 
+                            'Uy tín CĐT', 
+                            'Pháp lý', 
+                            'Rủi ro Thị trường', 
+                            'Rủi ro Tiến độ'
+                        ],
+                        datasets: [{
+                            label: 'Điểm đánh giá',
+                            data: [9, 8.5, 9, 8, 6, 7], 
+                            backgroundColor: 'rgba(160, 125, 90, 0.2)',
+                            borderColor: 'rgba(160, 125, 90, 1)',
+                            pointBackgroundColor: 'rgba(160, 125, 90, 1)',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: 'rgba(160, 125, 90, 1)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            r: {
+                                beginAtZero: true,
+                                max: 10,
+                                ticks: { stepSize: 2 },
+                                pointLabels: { font: { size: 11 } }
+                            }
+                        }
+                    }
+                });
+            }
+
+            apartmentTypeSelect.addEventListener('change', updateCalculator);
+            unitPriceSlider.addEventListener('input', updateCalculator);
+            
+            // Initial calls
+            updateComparisonDetails('ct8');
+            createComparisonChart();
+            updateComparisonChart('ct8');
+            createPaymentScheduleChart();
+            createRadarChart();
+            updateCalculator();
+
+        });
+    </script>
+
+</body>
+</html>
+
